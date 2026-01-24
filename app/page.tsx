@@ -13,10 +13,58 @@ import {
   isStopwatchRunning,
 } from "@/app/utils/stopwatch";
 
+const STORAGE_KEY = "clocks.stopwatches";
+
+const createDefaultStopwatches = () => [createStopwatch(1)];
+
+const isValidStopwatch = (value: unknown): value is Stopwatch => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Stopwatch;
+  const hasValidId = typeof candidate.id === "string";
+  const hasValidLabel = typeof candidate.label === "string";
+  const hasValidElapsedMs = typeof candidate.elapsedMs === "number";
+  const hasValidRunningSince =
+    candidate.runningSince === null ||
+    typeof candidate.runningSince === "number";
+
+  return (
+    hasValidId && hasValidLabel && hasValidElapsedMs && hasValidRunningSince
+  );
+};
+
+const loadStopwatches = () => {
+  if (typeof window === "undefined") {
+    return createDefaultStopwatches();
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return createDefaultStopwatches();
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return createDefaultStopwatches();
+    }
+    if (parsed.every(isValidStopwatch)) {
+      return parsed;
+    }
+    const validStopwatches = parsed.filter(isValidStopwatch);
+    return validStopwatches.length > 0
+      ? validStopwatches
+      : createDefaultStopwatches();
+  } catch {
+    return createDefaultStopwatches();
+  }
+};
+
 export default function Home() {
-  const [stopwatches, setStopwatches] = useState<Stopwatch[]>(() => [
-    createStopwatch(1),
-  ]);
+  const [stopwatches, setStopwatches] = useState<Stopwatch[]>(() =>
+    loadStopwatches()
+  );
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -26,6 +74,13 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stopwatches));
+  }, [stopwatches]);
 
   const totalElapsedMs = useMemo(() => {
     return stopwatches.reduce((total, stopwatch) => {
