@@ -1,5 +1,6 @@
 "use client";
 
+import type { DragEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { AddStopwatchSlot } from "@/app/components/AddStopwatchSlot";
@@ -66,6 +67,7 @@ export default function Home() {
     loadStopwatches()
   );
   const [now, setNow] = useState(() => Date.now());
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -136,6 +138,38 @@ export default function Home() {
     );
   };
 
+  const handleDragStart = (id: string) => {
+    setDraggingId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = (targetId: string) => {
+    setStopwatches((prev) => {
+      if (!draggingId || draggingId === targetId) {
+        return prev;
+      }
+
+      const fromIndex = prev.findIndex((item) => item.id === draggingId);
+      const toIndex = prev.findIndex((item) => item.id === targetId);
+
+      if (fromIndex === -1 || toIndex === -1) {
+        return prev;
+      }
+
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 px-6 py-12 text-zinc-900 dark:bg-black dark:text-zinc-50">
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-10">
@@ -154,10 +188,15 @@ export default function Home() {
                 displayTime={formatTime(displayMs)}
                 isRunning={isRunning}
                 hasStarted={hasStarted}
+                isDragging={draggingId === stopwatch.id}
                 onLabelChange={updateStopwatchLabel}
                 onRemove={removeStopwatch}
                 onToggleRunning={toggleRunning}
                 onReset={resetStopwatch}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
               />
             );
           })}

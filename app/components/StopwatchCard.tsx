@@ -1,5 +1,7 @@
 "use client";
 
+import type { DragEvent } from "react";
+
 import type { Stopwatch } from "../types/stopwatch";
 
 type StopwatchCardProps = {
@@ -7,10 +9,15 @@ type StopwatchCardProps = {
   displayTime: string;
   isRunning: boolean;
   hasStarted: boolean;
+  isDragging: boolean;
   onLabelChange: (id: string, label: string) => void;
   onRemove: (id: string) => void;
   onToggleRunning: (id: string) => void;
   onReset: (id: string) => void;
+  onDragStart: (id: string) => void;
+  onDragEnd: () => void;
+  onDragOver: (event: DragEvent<HTMLElement>) => void;
+  onDrop: (id: string) => void;
 };
 
 export function StopwatchCard({
@@ -18,13 +25,27 @@ export function StopwatchCard({
   displayTime,
   isRunning,
   hasStarted,
+  isDragging,
   onLabelChange,
   onRemove,
   onToggleRunning,
   onReset,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
 }: StopwatchCardProps) {
   return (
-    <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
+    <article
+      draggable
+      onDragStart={() => onDragStart(stopwatch.id)}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={() => onDrop(stopwatch.id)}
+      className={`group cursor-grab rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:shadow-md hover:ring-2 hover:ring-zinc-300 active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-950 dark:hover:ring-zinc-700 ${
+        isDragging ? "opacity-60 ring-2 ring-zinc-400" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <input
